@@ -3,6 +3,6 @@ The intention here is to have a mechanism where-in multiple processes and thread
 When a thread is writing data, all other threads should be blocked.
 
 # flock
-In Linux this can be pretty easily done with a call flock ( At least I hope so )
+In Linux this can be pretty easily done with a call to flock ( At least I hope so )
 
 # std::shared_lock
