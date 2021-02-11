@@ -1,10 +1,5 @@
 #include <stdio.h>
 #include <iostream>
-#include <sys/file.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <errno.h>
 #include <string.h>
 #include <string>
@@ -17,8 +12,8 @@ std::shared_timed_mutex fileMutex;
 
 bool init()
 {
-    int fd = open(FILE_TO_BE_USED, O_CREAT | O_TRUNC | O_RDWR, 0777 );
-    if(fd < 0)
+    FILE *fp = fopen(FILE_TO_BE_USED, "w");
+    if(!fp)
     {
         std::cout << "Failed to create the file " << FILE_TO_BE_USED << " with error " << strerror(errno);
         return false;
@@ -29,73 +24,79 @@ bool init()
         for (auto idx=0; idx<100; idx++)
         {
             std::string szString1 = szString + std::to_string(idx) + "\n";
-            write(fd, szString1.c_str(), szString1.size());
+            fprintf(fp, "%s", szString1.c_str());
         }
-        close(fd);
+        fclose(fp);
         return true;
     }
 }
 
-int readLine(int fd, int ID)
+int getLine(FILE *fp, int ID)
 {
-    std::shared_lock<std::shared_timed_mutex> readerLock(fileMutex);
-    char line[1000] = {0};
-    char ch;
-    int idx=0;
-    do{
-        if(1 == read(fd, &ch, 1))
-            line[idx++] = ch;
-        else
-            break;
-    }while(ch != '\n');
-    if(idx)
-        std::cout << "[Reader: " << ID << "]" << line;
+    char ch[1000] = {0};
+    int idx = 0;
+    {
+        std::shared_lock<std::shared_timed_mutex> readerLock(fileMutex);
+        while (1)
+        {
+            char ch1;
+            fscanf(fp, "%c", &ch1);
+            if (ch1 == '\n')
+                break;
+            else
+                ch[idx++] = ch1;
+        }
+    }
+    std::cout << "[Reader : " << ID << "] " << ch << std::endl;
     return idx;
 }
 
 void* reader(int reader_ID)
 {
-    int fd = open(FILE_TO_BE_USED, O_RDONLY);
-    if( fd < 0 )
+    FILE* fd = fopen(FILE_TO_BE_USED, "r");
+    if( !fd )
     {
         std::cout << "Failed to open the file " << FILE_TO_BE_USED << " with error " << strerror(errno);
     }
     else
     {
-        while(readLine(fd, reader_ID))
+        char *line = NULL;
+        size_t len = 0;
+        while(!feof(fd))
         {
-            usleep(100*1000);
+            getLine(fd, reader_ID);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
-        close(fd);
+        free(line);
+        fclose(fd);
     }
 }
 
 void* writer(int writer_ID)
 {
-    int fd = open(FILE_TO_BE_USED, O_RDWR);
-    if( fd < 0 )
+    FILE* fd = fopen(FILE_TO_BE_USED, "a+");
+    if( !fd )
     {
         std::cout << "Failed to open the file " << FILE_TO_BE_USED << " with error " << strerror(errno);
     }
     else
     {
-        lseek(fd, 0, SEEK_END);
+        fseek(fd, 0, SEEK_END);
         std::string szString = "This is line number : ";
         for (auto idx=100; idx<120; idx++)
         {
             std::string szString1 = szString + std::to_string(idx) + "\n";
             std::lock_guard<std::shared_timed_mutex> writerLock(fileMutex);
-            write(fd, szString1.c_str(), szString1.size());
+            fprintf(fd,"%s", szString1.c_str());
             if(idx == 105 || idx==110 || idx==115)
             {
                 std::cout << " Write started" << std::endl;
-                sleep(2);
+                std::this_thread::sleep_for(std::chrono::milliseconds(2000));
                 std::cout << " Write done" << std::endl;
             }
-            usleep(100*1000);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
-        sync();
-        close(fd);
+        fclose(fd);
     }
 }
 
