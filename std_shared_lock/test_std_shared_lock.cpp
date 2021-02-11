@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <iostream>
-#include <pthread.h>
 #include <sys/file.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -11,6 +10,7 @@
 #include <string>
 #include <mutex>
 #include <shared_mutex>
+#include <thread>
 
 #define FILE_TO_BE_USED "test_locking.txt"
 std::shared_timed_mutex fileMutex;
@@ -53,7 +53,7 @@ int readLine(int fd, int ID)
     return idx;
 }
 
-void* reader(void* reader_ID)
+void* reader(int reader_ID)
 {
     int fd = open(FILE_TO_BE_USED, O_RDONLY);
     if( fd < 0 )
@@ -62,7 +62,7 @@ void* reader(void* reader_ID)
     }
     else
     {
-        while(readLine(fd, *(int*)(reader_ID)))
+        while(readLine(fd, reader_ID))
         {
             usleep(100*1000);
         }
@@ -70,7 +70,7 @@ void* reader(void* reader_ID)
     }
 }
 
-void* writer(void* writer_ID)
+void* writer(int writer_ID)
 {
     int fd = open(FILE_TO_BE_USED, O_RDWR);
     if( fd < 0 )
@@ -102,29 +102,13 @@ void* writer(void* writer_ID)
 int main()
 {
     init();
-    pthread_t reader1, reader2, reader3, writer1;
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    int reader_id[3] = {1,2,3};
-    if (pthread_create(&reader1, &attr, reader, &reader_id[0]))
-    {
-        std::cout << "Failed to create Reader-1" << std::endl;       
-    }
-    if (pthread_create(&reader2, &attr, reader, &reader_id[1]))
-    {
-        std::cout << "Failed to create Reader-2" << std::endl;       
-    }
-    if (pthread_create(&writer1, &attr, writer, &reader_id[1]))
-    {
-        std::cout << "Failed to create Writer-1" << std::endl;       
-    }
-    if (pthread_create(&reader3, &attr, reader, &reader_id[2]))
-    {
-        std::cout << "Failed to create Reader-3" << std::endl;       
-    }
-    pthread_join(reader1, NULL);
-    pthread_join(reader2, NULL);
-    pthread_join(writer1, NULL);
-    pthread_join(reader3, NULL);
+    std::thread reader1([]{ reader(1); });
+    std::thread reader2([]{ reader(2); });
+    std::thread writer1([]{ writer(1); });
+    std::thread reader3([]{ reader(3); });
+    reader1.join();
+    reader2.join();
+    writer1.join();
+    reader3.join();
     return 0;
 }
