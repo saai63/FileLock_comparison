@@ -1,3 +1,7 @@
+![Build](https://github.com/saai63/FileLock_comparison/workflows/Linux_Build/badge.svg)
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 # FileLock_comparison
 The intention here is to have a mechanism where-in multiple processes and threads can read parallely from a file, but only one thread can perform a write.
 When a thread is writing data, all other threads should be blocked.
