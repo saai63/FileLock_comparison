@@ -45,9 +45,10 @@ int readLine(int fd, int ID)
         else
             break;
     }while(ch != '\n');
-    flock(fd, LOCK_UN);
+    
     if(idx)
         std::cout << "[Reader: " << ID << "]" << line;
+    flock(fd, LOCK_UN);
     return idx;
 }
 

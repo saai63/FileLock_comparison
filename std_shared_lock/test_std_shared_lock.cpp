@@ -46,8 +46,8 @@ int getLine(FILE *fp, int ID)
             else
                 ch[idx++] = ch1;
         }
+        std::cout << "[Reader : " << ID << "] " << ch << std::endl;
     }
-    std::cout << "[Reader : " << ID << "] " << ch << std::endl;
     return idx;
 }
 
