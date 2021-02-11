@@ -1,5 +1,7 @@
 ![Build](https://github.com/saai63/FileLock_comparison/workflows/Linux_Build/badge.svg)
 
+![Build](https://github.com/saai63/FileLock_comparison/workflows/Windows_Build/badge.svg)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 # FileLock_comparison
